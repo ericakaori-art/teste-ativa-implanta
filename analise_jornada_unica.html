@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste Jornada Unica vs Jornada Quebrada</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --red: #EA1D2C;
+    --red-dark: #C4161F;
+    --red-light: #FFF0F1;
+    --gray-900: #1A1A1A;
+    --gray-700: #4A4A4A;
+    --gray-500: #717171;
+    --gray-300: #DCDCDC;
+    --gray-100: #F5F5F5;
+    --white: #FFFFFF;
+    --green: #1BA672;
+    --green-light: #E6F9F0;
+    --yellow: #F7A900;
+    --yellow-light: #FFF8E6;
+    --blue: #2D7FF9;
+    --blue-light: #EBF3FF;
+    --purple: #7C3AED;
+    --purple-light: #F3EEFF;
+    --orange: #E8590C;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-100); color: var(--gray-900); line-height: 1.5; }
+
+  .header { background: var(--red); color: var(--white); padding: 28px 40px 0; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .header .badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .tabs { display: flex; gap: 0; }
+  .tab { padding: 10px 24px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: rgba(255,255,255,0.7); border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: var(--white); }
+  .tab.active { color: var(--white); background: rgba(255,255,255,0.1); border-bottom-color: var(--white); border-radius: 8px 8px 0 0; }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 24px 40px 40px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Groups banner */
+  .groups-banner { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 1px solid var(--gray-300); }
+  .group-card { padding: 20px 24px; background: var(--white); }
+  .group-card.teste { border-left: 5px solid var(--red); }
+  .group-card.controle { border-right: 5px solid var(--gray-500); }
+  .group-card .group-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .group-card.teste .group-tag { color: var(--red); }
+  .group-card.controle .group-tag { color: var(--gray-500); }
+  .group-card .group-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .group-card .group-desc { font-size: 13px; color: var(--gray-500); line-height: 1.5; }
+  .group-vs { display: flex; align-items: center; justify-content: center; background: var(--gray-100); padding: 0 16px; font-size: 14px; font-weight: 700; color: var(--gray-500); }
+  .group-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 14px; }
+  .group-metric { background: var(--gray-100); border-radius: 8px; padding: 10px 12px; }
+  .group-metric .gm-val { font-size: 22px; font-weight: 700; line-height: 1; }
+  .group-card.teste .gm-val { color: var(--red); }
+  .group-card.controle .gm-val { color: var(--gray-700); }
+  .group-metric .gm-label { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+  /* Disclaimer */
+  .disclaimer { background: var(--blue-light); border: 1px solid rgba(45,127,249,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px; }
+  .disclaimer-icon { font-size: 16px; margin-top: 1px; }
+  .disclaimer p { font-size: 13px; color: var(--gray-700); }
+
+  /* KPI Cards */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card { background: var(--white); border-radius: 12px; padding: 20px; border: 1px solid var(--gray-300); }
+  .kpi-card .label { font-size: 12px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
+  .kpi-card .value { font-size: 32px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+  .kpi-card .value.green { color: var(--green); }
+  .kpi-card .value.red { color: var(--red); }
+  .kpi-card .detail { font-size: 12px; color: var(--gray-500); margin-top: 6px; }
+  .kpi-card .comparison { display: inline-flex; align-items: center; gap: 4px; background: var(--green-light); color: var(--green); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 8px; }
+
+  /* Sections */
+  .section { background: var(--white); border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--gray-300); }
+  .section h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--gray-900); }
+  .section .section-desc { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Insight callout */
+  .insight { background: var(--yellow-light); border-left: 4px solid var(--yellow); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 20px; }
+  .insight .insight-title { font-size: 13px; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .insight p { font-size: 14px; color: var(--gray-700); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; background: var(--gray-100); font-weight: 600; color: var(--gray-700); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-300); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  tr:hover td { background: var(--gray-100); }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-red { background: var(--red-light); color: var(--red); }
+
+  /* Chart containers */
+  .chart-container { position: relative; height: 280px; }
+
+  /* Progress bars */
+  .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .progress-label { font-size: 13px; font-weight: 600; min-width: 90px; color: var(--gray-700); }
+  .progress-bar-bg { flex: 1; height: 28px; background: var(--gray-100); border-radius: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 700; color: var(--white); transition: width 0.8s ease; }
+  .progress-val { font-size: 13px; font-weight: 700; min-width: 50px; text-align: right; color: var(--gray-900); }
+
+  .notes { font-size: 12px; color: var(--gray-500); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-100); }
+
+  /* Daily tab */
+  .daily-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .mini-card { background: var(--white); border-radius: 10px; padding: 16px; border: 1px solid var(--gray-300); text-align: center; }
+  .mini-card .mini-val { font-size: 28px; font-weight: 700; }
+  .mini-card .mini-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+  .mini-card .mini-detail { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+  @media (max-width: 900px) {
+    .kpi-row, .daily-kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .groups-banner { grid-template-columns: 1fr; }
+    .group-vs { padding: 8px; }
+    .content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Teste Jornada Unica vs Jornada Quebrada</h1>
+      <div class="subtitle">Ativacao + Adocao GA &bull; Julho 2026 &bull; Coord. Roberta</div>
+    </div>
+    <span class="badge">Teste em andamento</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('analise')">Analise & Insights</button>
+    <button class="tab" onclick="switchTab('diario')">Acompanhamento Diario</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ===== ABA 1: ANÁLISE ===== -->
+<div id="tab-analise" class="tab-content active">
+
+  <!-- Definição dos grupos -->
+  <div class="groups-banner">
+    <div class="group-card teste">
+      <div class="group-tag">Grupo Teste &mdash; Jornada Unica</div>
+      <div class="group-title">Ativacao + Adocao GA com 1 executivo</div>
+      <div class="group-desc">Executivos Ivan e Thais conduzem o merchant desde a captacao ate a ativacao das features GA, sem transbordo entre times.</div>
+      <div class="group-metrics">
+        <div class="group-metric">
+          <div class="gm-val">76</div>
+          <div class="gm-label">Base encarteirada</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">45</div>
+          <div class="gm-label">Setup completo</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">26</div>
+          <div class="gm-label">Com 5 pedidos</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">11</div>
+          <div class="gm-label">Ativacao GA</div>
+        </div>
+      </div>
+    </div>
+    <div class="group-vs">VS</div>
+    <div class="group-card controle">
+      <div class="group-tag">Grupo Controle &mdash; Jornada Quebrada</div>
+      <div class="group-title">Ativacao e Adocao GA em times separados</div>
+      <div class="group-desc">Merchant passa pela ativacao (time ativacao), transborda para o time de adocao que ativa as features GA. Fluxo padrao atual. Apenas merchants com oportunidade_ga = Sim sao trabalhados na adocao.</div>
+      <div class="group-metrics">
+        <div class="group-metric">
+          <div class="gm-val">84</div>
+          <div class="gm-label">Base total (Self)</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">39</div>
+          <div class="gm-label">Oportunidade GA</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">84</div>
+          <div class="gm-label">Com 5 pedidos</div>
+        </div>
+        <div class="group-metric">
+          <div class="gm-val">7</div>
+          <div class="gm-label">Ativacao GA</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <span class="disclaimer-icon">&#9432;</span>
+    <p>Ambos os grupos consideram apenas <strong>merchants novos</strong> (captados no periodo) e de <strong>origem Self</strong>, garantindo comparabilidade entre os grupos. O teste esta em andamento (jul/2026) e os resultados sao parciais.</p>
+  </div>
+
+  <!-- KPIs principais -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="label">SLA Captacao &rarr; 5 pedidos</div>
+      <div class="value green">6,6 dias</div>
+      <div class="detail">Grupo Teste &bull; n=26</div>
+      <div class="comparison">&darr; 49% mais rapido que controle</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">SLA Captacao &rarr; 1a Feature GA</div>
+      <div class="value green">3,8 dias</div>
+      <div class="detail">Grupo Teste &bull; n=4</div>
+      <div class="comparison">&darr; 33% mais rapido que controle</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">SLA Captacao &rarr; 5 pedidos</div>
+      <div class="value">13,0 dias</div>
+      <div class="detail">Grupo Controle &bull; n=83</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">SLA Captacao &rarr; 1a Feature GA</div>
+      <div class="value">5,7 dias</div>
+      <div class="detail">Grupo Controle (oport=Sim) &bull; n=3</div>
+    </div>
+  </div>
+
+  <!-- Insight principal -->
+  <div class="insight">
+    <div class="insight-title">Achado-chave</div>
+    <p>No grupo teste, <strong>3 merchants ativaram features GA antes mesmo de atingir 5 pedidos</strong>. Isso so acontece na jornada unica, onde o executivo trabalha features em paralelo com a ativacao de pedidos, eliminando o represamento entre as etapas.</p>
+  </div>
+
+  <!-- SLA Comparativo por Feature -->
+  <div class="section">
+    <h2>SLA por Feature GA: Captacao ate Ativacao</h2>
+    <div class="section-desc">Tempo medio em dias desde a captacao ate ativar cada feature. Teste vs Controle.</div>
+    <div class="chart-container">
+      <canvas id="chartFeatureSLA"></canvas>
+    </div>
+    <div class="notes">* NFC sem dados em ambos os grupos. Controle filtrado por oportunidade_ga = Sim (n pequeno: 2-3 merchants por feature). Amostras pequenas &mdash; resultados tendem a consolidar ao longo do mes.</div>
+  </div>
+
+
+  <!-- Produtividade -->
+  <div class="section">
+    <h2>Produtividade & Taxa de Contato</h2>
+    <div class="section-desc">Rastreamos cada merchant_id do grupo controle no historico de ativacao (abas Abril/Maio/Junho) e na base de Adocao Jul para identificar quais profissionais atenderam cada um. No teste, o mesmo executivo cuida do merchant do inicio ao fim.<br><strong>Importante:</strong> na etapa de Adocao, somente merchants com <em>oportunidade_ga = Sim</em> sao trabalhados pelos executivos (39 de 84). Merchants com oportunidade = Nao nao sao atendidos.</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Metrica</th>
+          <th style="color:var(--red)">Grupo Teste<br><span style="font-weight:400;font-size:10px;text-transform:none">Jornada Unica (fluxo unico)</span></th>
+          <th>Controle &mdash; Ativacao<br><span style="font-weight:400;font-size:10px;text-transform:none">Etapa 1: Time Ativacao</span></th>
+          <th>Controle &mdash; Adocao<br><span style="font-weight:400;font-size:10px;text-transform:none">Etapa 2: Time Adocao<br>(oportunidade = Sim)</span></th>
+          <th style="background:var(--yellow-light)">Controle &mdash; Ponderado<br><span style="font-weight:400;font-size:10px;text-transform:none">Fluxo completo (2 etapas)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Profissionais envolvidos no fluxo</td>
+          <td><strong>2</strong> <span style="font-size:11px;color:var(--gray-500)">executivos</span></td>
+          <td>14 <span style="font-size:11px;color:var(--gray-500)">executivos</span></td>
+          <td>5 <span style="font-size:11px;color:var(--gray-500)">HCs</span></td>
+          <td style="background:var(--yellow-light)"><strong>19</strong> <span style="font-size:11px;color:var(--gray-500)">profissionais distintos</span></td>
+        </tr>
+        <tr>
+          <td>Base encarteirada</td>
+          <td><strong>76</strong></td>
+          <td>48 <span style="font-size:11px;color:var(--gray-500)">(encontrados no hist.)</span></td>
+          <td>39 <span style="font-size:11px;color:var(--gray-500)">(oportunidade=Sim)</span></td>
+          <td style="background:var(--yellow-light)"><strong>84</strong></td>
+        </tr>
+        <tr>
+          <td>Atingiram 5 pedidos</td>
+          <td><strong>26</strong></td>
+          <td colspan="2" style="text-align:center">84 <span style="font-size:11px;color:var(--gray-500)">(pre-requisito da adocao)</span></td>
+          <td style="background:var(--yellow-light)"><strong>84</strong></td>
+        </tr>
+        <tr>
+          <td>Ativaram feature GA</td>
+          <td><strong>11</strong></td>
+          <td>&mdash;</td>
+          <td>7 <span style="font-size:11px;color:var(--gray-500)">(dos 39 trabalhados)</span></td>
+          <td style="background:var(--yellow-light)"><strong>7</strong></td>
+        </tr>
+        <tr style="border-top:2px solid var(--gray-300)">
+          <td><strong>Produtividade 5pdd</strong> <span style="font-size:11px;color:var(--gray-500)">(5pdd / profissional)</span></td>
+          <td><strong style="color:var(--green)">13,0</strong></td>
+          <td>6,0</td>
+          <td>&mdash;</td>
+          <td style="background:var(--yellow-light)"><strong>4,4</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Produtividade GA</strong> <span style="font-size:11px;color:var(--gray-500)">(GA ativado / profissional)</span></td>
+          <td><strong style="color:var(--green)">5,5</strong></td>
+          <td>&mdash;</td>
+          <td>1,4</td>
+          <td style="background:var(--yellow-light)"><strong>0,4</strong></td>
+        </tr>
+        <tr>
+          <td>Profissionais por merchant <span style="font-size:11px;color:var(--gray-500)">(quantas pessoas tocam 1 merchant)</span></td>
+          <td><strong>1,0</strong></td>
+          <td>&mdash;</td>
+          <td>&mdash;</td>
+          <td style="background:var(--yellow-light)"><strong>1,5</strong></td>
+        </tr>
+        <tr>
+          <td>Taxa de contato efetivo</td>
+          <td><strong style="color:var(--green)">64,5%</strong> <span style="font-size:11px;color:var(--gray-500)">(49/76)</span></td>
+          <td>33,3% <span style="font-size:11px;color:var(--gray-500)">(16/48)</span></td>
+          <td>12,8% <span style="font-size:11px;color:var(--gray-500)">(5/39)</span></td>
+          <td style="background:var(--yellow-light)"><strong>17,9%</strong> <span style="font-size:11px;color:var(--gray-500)">(7/39)</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="notes">
+      <strong>Como ler esta tabela:</strong> produtividade calculada sobre resultados: 5pdd atingidos e features GA ativadas por profissional. No controle, todos os 84 merchants ja atingiram 5pdd (pre-requisito para entrar na adocao). Na etapa de adocao, somente 39 merchants entraram com oportunidade_ga = Sim e foram efetivamente trabalhados pelos HCs; destes, 7 ativaram GA. O teste ainda esta em andamento.<br>
+      "Profissionais envolvidos" = total de pessoas distintas que atenderam o conjunto dos merchants. Na media, cada merchant do controle passou por 1,5 profissionais (ativacao + adocao), enquanto no teste e sempre 1.<br>
+      44 merchants nao encontrados no historico de ativacao (provavelmente self-service/automacao). 45 merchants com oportunidade_ga = Nao nao foram trabalhados na etapa de adocao.
+    </div>
+  </div>
+
+  <!-- Insight produtividade -->
+  <div class="insight">
+    <div class="insight-title">Insight de Produtividade</div>
+    <p>Quando medimos produtividade sobre <strong>resultados</strong>: cada executivo do teste gera <strong>13,0 merchants com 5pdd</strong> e <strong>5,5 ativacoes GA</strong>. No controle ponderado, o fluxo com 19 profissionais entrega <strong>4,4 merchants com 5pdd</strong> e <strong>0,4 ativacoes GA por profissional</strong>. Ou seja, a jornada unica e <strong>3,0x mais produtiva em 5pdd</strong> e <strong>13,8x mais produtiva em GA</strong> por profissional, com uma taxa de contato efetivo <strong>3,6x maior</strong> (64,5% vs 17,9%).</p>
+    <p style="font-size:12px;color:var(--gray-500);margin-top:8px">Nota: a baixa produtividade GA do controle reflete que apenas 7 dos 39 merchants trabalhados (oportunidade=Sim) ativaram features GA ate o momento. Os 45 merchants com oportunidade=Nao nao sao atendidos ativamente pelos HCs.</p>
+  </div>
+
+
+  <!-- Detalhe por executivo -->
+  <div class="section">
+    <h2>Desempenho por Executivo (Grupo Teste)</h2>
+    <div class="section-desc">Comparativo entre os dois executivos da jornada unica</div>
+    <table>
+      <thead>
+        <tr><th>Metrica</th><th>Ivan De Souza Pinto</th><th>Thais Aguiar</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Total merchants</td><td><strong>43</strong></td><td><strong>33</strong></td></tr>
+        <tr><td>Contato efetivo</td><td>62,8% <span style="font-size:11px;color:var(--gray-500)">(27/43)</span></td><td>66,7% <span style="font-size:11px;color:var(--gray-500)">(22/33)</span></td></tr>
+        <tr><td>Setup OK</td><td>67,4%</td><td>48,5%</td></tr>
+        <tr><td>Atingiu 5 pedidos</td><td>44,2%</td><td>21,2%</td></tr>
+        <tr><td>Feature GA ativada</td><td>23,3%</td><td>12,1%</td></tr>
+        <tr><td>SLA captacao &rarr; 5pdd (media)</td><td><strong>6,7 dias</strong></td><td><strong>6,1 dias</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Metodologia -->
+  <div class="section">
+    <h2>Metodologia</h2>
+    <table>
+      <tbody>
+        <tr><td style="font-weight:600;width:180px">Grupo Teste</td><td>76 merchants GA, origem Self, com Ivan e Thais em jornada unica (ativacao + adocao GA)</td></tr>
+        <tr><td style="font-weight:600">Grupo Controle</td><td>84 merchants Novos + Self na base Adocao (jornada quebrada: ativacao &rarr; transbordo &rarr; adocao). Filtrados 39 com oportunidade_ga = Sim para todas as metricas de adocao (ativacao GA, produtividade, contato). Os 45 com oportunidade = Nao ativaram GA de forma autonoma.</td></tr>
+        <tr><td style="font-weight:600">Criterio ativacao GA</td><td>Pelo menos 1 feature ativada: NFC, Estoque, Financeiro ou Compras</td></tr>
+        <tr><td style="font-weight:600">Periodo</td><td>Julho 2026 (teste em andamento)</td></tr>
+        <tr><td style="font-weight:600">Ressalva</td><td>Amostras pequenas no grupo teste para SLAs de feature (n=4-6). Resultados parciais que tendem a se consolidar. 44 merchants do controle nao encontrados no historico de ativacao.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ===== ABA 2: ACOMPANHAMENTO DIÁRIO ===== -->
+<div id="tab-diario" class="tab-content">
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <span class="disclaimer-icon">&#9432;</span>
+    <p>Evolucao diaria de ativacao de features GA em julho/2026. Ambos os grupos: <strong>merchants novos, origem Self</strong>. Grupo controle filtrado por <strong>oportunidade_ga = Sim</strong> (somente merchants trabalhados por executivos). Ativacao contabilizada na data em que a feature foi ativada pelo merchant.</p>
+  </div>
+
+  <!-- Acumulado comparativo -->
+  <div class="section">
+    <h2>Evolucao Acumulada &mdash; Total de Features Ativadas</h2>
+    <div class="section-desc">Comparativo acumulado: todas as features somadas por grupo</div>
+    <div class="chart-container" style="height: 280px;">
+      <canvas id="chartCumComparativo"></canvas>
+    </div>
+  </div>
+
+  <!-- BLOCO GRUPO TESTE -->
+  <div class="section" style="border-left: 4px solid var(--red);">
+    <h2 style="color:var(--red)">Grupo Teste &mdash; Jornada Unica</h2>
+    <div class="section-desc">Ivan + Thais &bull; 76 merchants encarteirados &bull; 11 com ativacao GA</div>
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:20px;">
+      <div class="mini-card"><div class="mini-val" style="color:var(--red)">76</div><div class="mini-label">Base</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--red)">26</div><div class="mini-label">Com 5 pedidos</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--red)">11</div><div class="mini-label">Ativacao GA</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--red)">6</div><div class="mini-label">Features jul</div></div>
+    </div>
+    <div class="chart-container" style="height: 240px;">
+      <canvas id="chartDailyTeste"></canvas>
+    </div>
+  </div>
+
+  <!-- BLOCO GRUPO CONTROLE -->
+  <div class="section" style="border-left: 4px solid var(--gray-500);">
+    <h2 style="color:var(--gray-700)">Grupo Controle &mdash; Jornada Quebrada</h2>
+    <div class="section-desc">Novos + Self + Oportunidade GA = Sim &bull; 39 merchants trabalhados &bull; 7 com ativacao GA</div>
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:20px;">
+      <div class="mini-card"><div class="mini-val" style="color:var(--gray-700)">39</div><div class="mini-label">Base (oport=Sim)</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--gray-700)">39</div><div class="mini-label">Com 5 pedidos</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--gray-700)">7</div><div class="mini-label">Ativacao GA</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--gray-700)">16</div><div class="mini-label">Features jul</div></div>
+    </div>
+    <div class="chart-container" style="height: 240px;">
+      <canvas id="chartDailyControle"></canvas>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /content -->
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const RED = '#EA1D2C';
+const BLUE = '#2D7FF9';
+const GREEN = '#1BA672';
+const YELLOW = '#F7A900';
+const PURPLE = '#7C3AED';
+const ORANGE = '#E8590C';
+const GRAY = '#DCDCDC';
+const GRAY_700 = '#4A4A4A';
+
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.font.size = 12;
+
+// ===== ABA 1 CHARTS =====
+
+// SLA por Feature
+new Chart(document.getElementById('chartFeatureSLA'), {
+  type: 'bar',
+  data: {
+    labels: ['Financeiro', 'Estoque', 'Compras', 'NFC'],
+    datasets: [
+      { label: 'Teste (Jornada Unica)', data: [3.8, 3.0, 3.0, null], backgroundColor: RED, borderRadius: 6, barPercentage: 0.6 },
+      { label: 'Controle (oport=Sim)', data: [5.7, 3.0, 3.0, null], backgroundColor: GRAY, borderRadius: 6, barPercentage: 0.6 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16 } }, tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ctx.dataset.label + ': ' + ctx.raw + ' dias' : 'Sem dados' } } },
+    scales: { y: { beginAtZero: true, title: { display: true, text: 'Dias' }, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } }
+  }
+});
+
+
+// ===== ABA 2 CHARTS =====
+
+const labels = ['01/07','02/07','03/07','04/07','05/07','06/07','07/07','08/07','09/07','10/07','11/07','12/07','13/07','14/07','15/07','16/07','17/07','18/07','19/07','20/07','21/07','22/07'];
+
+// Teste diário por feature
+const testeFin =  [0,0,0,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0];
+const testeEst =  [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0];
+const testeComp = [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0];
+const testeNFC =  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+new Chart(document.getElementById('chartDailyTeste'), {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [
+      { label: 'Financeiro', data: testeFin, backgroundColor: BLUE, borderRadius: 3 },
+      { label: 'Estoque', data: testeEst, backgroundColor: GREEN, borderRadius: 3 },
+      { label: 'Compras', data: testeComp, backgroundColor: PURPLE, borderRadius: 3 },
+      { label: 'NFC', data: testeNFC, backgroundColor: ORANGE, borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 12, font: { size: 11 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, font: { size: 10 } } },
+      y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' }, title: { display: true, text: 'Ativacoes' } }
+    }
+  }
+});
+
+// Controle diário por feature
+const controleFin =  [0,0,0,0,0,0,0,1,1,1,0,0,2,0,0,0,0,0,0,1,0,0];
+const controleEst =  [0,0,0,0,0,1,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0];
+const controleComp = [0,0,0,0,0,1,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0];
+const controleNFC =  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+new Chart(document.getElementById('chartDailyControle'), {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [
+      { label: 'Financeiro', data: controleFin, backgroundColor: BLUE, borderRadius: 3 },
+      { label: 'Estoque', data: controleEst, backgroundColor: GREEN, borderRadius: 3 },
+      { label: 'Compras', data: controleComp, backgroundColor: PURPLE, borderRadius: 3 },
+      { label: 'NFC', data: controleNFC, backgroundColor: ORANGE, borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 12, font: { size: 11 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, font: { size: 10 } } },
+      y: { stacked: true, beginAtZero: true, ticks: { stepSize: 2 }, grid: { color: '#f0f0f0' }, title: { display: true, text: 'Ativacoes' } }
+    }
+  }
+});
+
+// Acumulado comparativo (total features)
+const testeCumTotal =  [0,0,0,1,1,1,1,2,3,6,6,6,6,6,6,6,6,6,6,6,6,6];
+const controleCumTotal = [0,0,0,0,0,2,2,3,4,9,9,9,15,15,15,15,15,15,15,16,16,16];
+
+new Chart(document.getElementById('chartCumComparativo'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [
+      { label: 'Teste (Jornada Unica)', data: testeCumTotal, borderColor: RED, backgroundColor: 'rgba(234,29,44,0.08)', fill: true, tension: 0.3, pointRadius: 3, borderWidth: 3 },
+      { label: 'Controle (Jornada Quebrada)', data: controleCumTotal, borderColor: GRAY_700, backgroundColor: 'rgba(74,74,74,0.06)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2, borderDash: [5,3] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16 } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw + ' features' } } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f0f0f0' }, title: { display: true, text: 'Total acumulado' } },
+      x: { grid: { display: false }, ticks: { maxRotation: 0 } }
+    },
+    interaction: { mode: 'index', intersect: false }
+  }
+});
+</script>
+
+</body>
+</html>
